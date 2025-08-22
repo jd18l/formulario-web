@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Formulario con Panel Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4f46e5;
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .admin-btn {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            margin-top: 15px;
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        .admin-btn:hover {
+            box-shadow: 0 15px 35px rgba(220, 38, 38, 0.3);
+        }
+
+        .admin-panel {
+            background: #f8fafc;
+            border-top: 3px solid #dc2626;
+            padding: 30px;
+        }
+
+        .admin-panel h2 {
+            color: #dc2626;
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        .email-list {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 2px solid #e5e7eb;
+        }
+
+        .email-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #f1f5f9;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .email-item:last-child {
+            border-bottom: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .delete-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .delete-btn:hover {
+            background: #b91c1c;
+            transform: scale(1.05);
+        }
+
+        .success-message, .error-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #dc2626;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #e5e7eb;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            margin-top: 5px;
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 50px auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Formulario de Login del Administrador -->
+    <div id="loginForm" class="container login-form">
+        <div class="header">
+            <h1>🔐 Acceso Administrador</h1>
+            <p>Ingresa la contraseña para acceder</p>
+        </div>
+        <div class="content">
+            <div id="loginError" class="error-message hidden">
+                Contraseña incorrecta
+            </div>
+            <div class="form-group">
+                <label for="adminPassword">Contraseña de Administrador:</label>
+                <input type="password" id="adminPassword" placeholder="Ingresa la contraseña">
+            </div>
+            <button class="btn" onclick="login()">Iniciar Sesión</button>
+            <button class="btn admin-btn" onclick="showMainForm()">Ir al Formulario Principal</button>
+        </div>
+    </div>
+
+    <!-- Formulario Principal -->
+    <div id="mainForm" class="container hidden">
+        <div class="header">
+            <h1>📝 Formulario de Registro</h1>
+            <p>Complete todos los campos requeridos</p>
+        </div>
+        <div class="content">
+            <div id="formMessage" class="hidden"></div>
+            <form id="registrationForm">
+                <div class="form-group">
+                    <label for="name">Nombre Completo *</label>
+                    <input type="text" id="name" name="name" required placeholder="Ej: Juan Pérez">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Correo Electrónico *</label>
+                    <input type="email" id="email" name="email" required placeholder="ejemplo@correo.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Teléfono</label>
+                    <input type="tel" id="phone" name="phone" placeholder="+1 234 567 8900">
+                </div>
+                
+                <div class="form-group">
+                    <label for="category">Categoría *</label>
+                    <select id="category" name="category" required>
+                        <option value="">Selecciona una categoría</option>
+                        <option value="estudiante">Estudiante</option>
+                        <option value="profesional">Profesional</option>
+                        <option value="empresa">Empresa</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="message">Mensaje</label>
+                    <textarea id="message" name="message" placeholder="Escribe tu mensaje aquí..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn">Enviar Formulario</button>
+            </form>
+            <button class="btn admin-btn" onclick="showLogin()">Panel de Administración</button>
+        </div>
+    </div>
+
+    <!-- Panel de Administración -->
+    <div id="adminPanel" class="container hidden">
+        <div class="header">
+            <h1>⚙️ Panel de Administración</h1>
+            <p>Gestiona los correos autorizados</p>
+        </div>
+        <div class="content">
+            <div class="admin-panel">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalEmails">0</div>
+                        <div class="stat-label">Correos Autorizados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalSubmissions">0</div>
+                        <div class="stat-label">Envíos Realizados</div>
+                    </div>
+                </div>
+                
+                <h3>Agregar Correo Autorizado</h3>
+                <div id="adminMessage" class="hidden"></div>
+                <div class="form-group">
+                    <input type="email" id="newEmail" placeholder="nuevo@correo.com">
+                </div>
+                <button class="btn" onclick="addEmail()">Agregar Correo</button>
+                
+                <h3 style="margin-top: 30px;">Correos Autorizados</h3>
+                <div id="emailList" class="email-list">
+                    <p style="text-align: center; color: #6b7280;">No hay correos autorizados</p>
+                </div>
+                
+                <button class="btn admin-btn" onclick="showMainForm()">Volver al Formulario</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración y datos
+        const ADMIN_PASSWORD = "admin123"; // Cambia esta contraseña
+        let allowedEmails = ["admin@ejemplo.com", "usuario@test.com"]; // Correos iniciales
+        let submissions = 0;
+
+        // Funciones de navegación
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('mainForm').classList.add('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        function showMainForm() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('mainForm').classList.remove('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+        }
+
+        function showAdminPanel() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('mainForm').classList.add('hidden');
+            document.getElementById('adminPanel').classList.remove('hidden');
+            updateEmailList();
+            updateStats();
+        }
+
+        // Login del administrador
+        function login() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                showAdminPanel();
+                document.getElementById('adminPassword').value = '';
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        }
+
+        // Gestión de correos autorizados
+        function addEmail() {
+            const newEmail = document.getElementById('newEmail').value.trim();
+            const messageDiv = document.getElementById('adminMessage');
+            
+            if (!newEmail) {
+                showAdminMessage('Por favor ingresa un correo válido', 'error');
+                return;
+            }
+            
+            if (!isValidEmail(newEmail)) {
+                showAdminMessage('Por favor ingresa un formato de correo válido', 'error');
+                return;
+            }
+            
+            if (allowedEmails.includes(newEmail)) {
+                showAdminMessage('Este correo ya está en la lista', 'error');
+                return;
+            }
+            
+            allowedEmails.push(newEmail);
+            document.getElementById('newEmail').value = '';
+            updateEmailList();
+            updateStats();
+            showAdminMessage('Correo agregado exitosamente', 'success');
+        }
+
+        function removeEmail(email) {
+            const index = allowedEmails.indexOf(email);
+            if (index > -1) {
+                allowedEmails.splice(index, 1);
+                updateEmailList();
+                updateStats();
+                showAdminMessage('Correo eliminado exitosamente', 'success');
+            }
+        }
+
+        function updateEmailList() {
+            const emailList = document.getElementById('emailList');
+            
+            if (allowedEmails.length === 0) {
+                emailList.innerHTML = '<p style="text-align: center; color: #6b7280;">No hay correos autorizados</p>';
+                return;
+            }
+            
+            let html = '';
+            allowedEmails.forEach(email => {
+                html += `
+                    <div class="email-item">
+                        <span>${email}</span>
+                        <button class="delete-btn" onclick="removeEmail('${email}')">Eliminar</button>
+                    </div>
+                `;
+            });
+            emailList.innerHTML = html;
+        }
+
+        function updateStats() {
+            document.getElementById('totalEmails').textContent = allowedEmails.length;
+            document.getElementById('totalSubmissions').textContent = submissions;
+        }
+
+        // Validación de correo
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function isEmailAllowed(email) {
+            return allowedEmails.includes(email);
+        }
+
+        // Manejo del formulario principal
+        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const name = document.getElementById('name').value.trim();
+            const category = document.getElementById('category').value;
+            
+            // Validar campos requeridos
+            if (!name || !email || !category) {
+                showFormMessage('Por favor completa todos los campos requeridos', 'error');
+                return;
+            }
+            
+            // Validar formato de correo
+            if (!isValidEmail(email)) {
+                showFormMessage('Por favor ingresa un correo electrónico válido', 'error');
+                return;
+            }
+            
+            // Verificar si el correo está autorizado
+            if (!isEmailAllowed(email)) {
+                showFormMessage('Lo sentimos, tu correo electrónico no está autorizado para usar este formulario. Contacta al administrador.', 'error');
+                return;
+            }
+            
+            // Si todo está correcto
+            submissions++;
+            showFormMessage('¡Formulario enviado exitosamente! Gracias por tu registro.', 'success');
+            
+            // Limpiar formulario
+            document.getElementById('registrationForm').reset();
+            
+            // Simular envío (aquí podrías agregar la lógica para enviar a un servidor)
+            console.log('Formulario enviado:', {
+                name: name,
+                email: email,
+                phone: document.getElementById('phone').value,
+                category: category,
+                message: document.getElementById('message').value,
+                timestamp: new Date()
+            });
+        });
+
+        // Funciones de utilidad para mensajes
+        function showFormMessage(message, type) {
+            const messageDiv = document.getElementById('formMessage');
+            messageDiv.className = type === 'success' ? 'success-message' : 'error-message';
+            messageDiv.textContent = message;
+            messageDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                messageDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        function showAdminMessage(message, type) {
+            const messageDiv = document.getElementById('adminMessage');
+            messageDiv.className = type === 'success' ? 'success-message' : 'error-message';
+            messageDiv.textContent = message;
+            messageDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                messageDiv.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Evento para Enter en el campo de contraseña
+        document.getElementById('adminPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+
+        // Evento para Enter en el campo de nuevo correo
+        document.getElementById('newEmail').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addEmail();
+            }
+        });
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            showMainForm();
+            updateStats();
+        });
+    </script>
+</body>
+</html>
