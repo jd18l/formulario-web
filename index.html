@@ -1,4 +1,12 @@
-<!DOCTYPE html>
+// Guardar automáticamente cada 30 segundos
+        setInterval(function() {
+            if (allowedEmails.length > 0) {
+                saveEmailsToStorage();
+            }
+            if (submissionsList.length > 0) {
+                saveSubmissionsToStorage();
+            }
+        }, 30000);<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -225,7 +233,7 @@
 
         .stats {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 15px;
             margin-bottom: 25px;
         }
@@ -271,6 +279,198 @@
         .lock-icon {
             font-size: 48px;
             margin-bottom: 20px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 25px;
+            background: #f1f5f9;
+            border-radius: 10px;
+            padding: 5px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #6b7280;
+        }
+
+        .tab-btn.active {
+            background: #4f46e5;
+            color: white;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .submissions-list {
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e5e7eb;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .submission-item {
+            border-bottom: 1px solid #f1f5f9;
+            padding: 20px;
+            transition: background 0.2s ease;
+        }
+
+        .submission-item:hover {
+            background: #f8fafc;
+        }
+
+        .submission-item:last-child {
+            border-bottom: none;
+        }
+
+        .submission-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .submission-info {
+            flex: 1;
+        }
+
+        .submission-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+
+        .submission-email {
+            color: #4f46e5;
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+
+        .submission-date {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .submission-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .view-btn, .delete-submission-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .view-btn {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .view-btn:hover {
+            background: #2563eb;
+            transform: scale(1.05);
+        }
+
+        .delete-submission-btn {
+            background: #dc2626;
+            color: white;
+        }
+
+        .delete-submission-btn:hover {
+            background: #b91c1c;
+            transform: scale(1.05);
+        }
+
+        .submission-details {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            border-left: 4px solid #4f46e5;
+            display: none;
+        }
+
+        .submission-details.show {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .detail-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            min-width: 100px;
+            color: #374151;
+        }
+
+        .detail-value {
+            color: #6b7280;
+            flex: 1;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .export-btn {
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(135deg, #059669, #047857);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(5, 150, 105, 0.3);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+        }
+
+        .clear-btn:hover {
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
         }
     </style>
 </head>
@@ -378,24 +578,53 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-number" id="totalSubmissions">0</div>
-                        <div class="stat-label">Envíos Realizados</div>
+                        <div class="stat-label">Formularios Enviados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="todaySubmissions">0</div>
+                        <div class="stat-label">Enviados Hoy</div>
+                    </div>
+                </div>
+
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="showTab('emails')">📧 Gestionar Correos</button>
+                    <button class="tab-btn" onclick="showTab('submissions')">📋 Ver Formularios</button>
+                </div>
+
+                <!-- Tab: Gestionar Correos -->
+                <div id="emailsTab" class="tab-content active">
+                    <h3>Agregar Correo Autorizado</h3>
+                    <div id="adminMessage" class="hidden"></div>
+                    <div class="form-group">
+                        <input type="email" id="newEmail" placeholder="nuevo@correo.com">
+                    </div>
+                    <button class="btn" onclick="addEmail()">Agregar Correo</button>
+                    
+                    <h3 style="margin-top: 30px;">Correos Autorizados</h3>
+                    <div id="emailList" class="email-list">
+                        <p style="text-align: center; color: #6b7280;">Cargando correos...</p>
+                    </div>
+                </div>
+
+                <!-- Tab: Ver Formularios -->
+                <div id="submissionsTab" class="tab-content">
+                    <div class="export-buttons">
+                        <button class="export-btn" onclick="exportSubmissions('excel')">📊 Exportar Excel</button>
+                        <button class="export-btn" onclick="exportSubmissions('csv')">📄 Exportar CSV</button>
+                        <button class="export-btn clear-btn" onclick="clearAllSubmissions()">🗑️ Limpiar Todo</button>
+                    </div>
+                    
+                    <h3>Formularios Recibidos</h3>
+                    <div id="submissionsList" class="submissions-list">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <p>No hay formularios enviados aún</p>
+                        </div>
                     </div>
                 </div>
                 
-                <h3>Agregar Correo Autorizado</h3>
-                <div id="adminMessage" class="hidden"></div>
-                <div class="form-group">
-                    <input type="email" id="newEmail" placeholder="nuevo@correo.com">
-                </div>
-                <button class="btn" onclick="addEmail()">Agregar Correo</button>
-                
-                <h3 style="margin-top: 30px;">Correos Autorizados</h3>
-                <div id="emailList" class="email-list">
-                    <p style="text-align: center; color: #6b7280;">Cargando correos...</p>
-                </div>
-                
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button class="btn admin-btn" onclick="exportEmails()" style="width: 48%;">Exportar Lista</button>
+                    <button class="btn admin-btn" onclick="exportEmails()" style="width: 48%;">Exportar Correos</button>
                     <button class="btn admin-btn" onclick="logout()" style="width: 48%;">Cerrar Sesión</button>
                 </div>
             </div>
@@ -407,10 +636,13 @@
         const ADMIN_PASSWORD = "admin123"; // Cambia esta contraseña
         const STORAGE_KEY = "formulario_emails_autorizados";
         const STATS_KEY = "formulario_estadisticas";
+        const SUBMISSIONS_KEY = "formulario_submissions";
         
         let allowedEmails = [];
         let currentUserEmail = "";
         let submissions = 0;
+        let submissionsList = [];
+        let currentTab = 'emails';
 
         // Funciones de almacenamiento permanente
         function saveEmailsToStorage() {
@@ -488,7 +720,10 @@
         }
 
         function saveStats() {
-            const stats = { submissions: submissions };
+            const stats = { 
+                submissions: submissions,
+                lastSubmissionDate: new Date().toISOString()
+            };
             try {
                 const encoded = btoa(JSON.stringify(stats));
                 if (typeof(Storage) !== "undefined") {
@@ -524,6 +759,61 @@
                 }
             } catch (e) {
                 submissions = 0;
+            }
+        }
+
+        // Funciones de almacenamiento de formularios enviados
+        function saveSubmission(formData) {
+            const submission = {
+                id: Date.now() + Math.random(),
+                timestamp: new Date().toISOString(),
+                date: new Date().toLocaleDateString('es-ES'),
+                time: new Date().toLocaleTimeString('es-ES'),
+                ...formData
+            };
+            
+            submissionsList.unshift(submission); // Agregar al inicio
+            saveSubmissionsToStorage();
+            return submission;
+        }
+
+        function saveSubmissionsToStorage() {
+            try {
+                const encoded = btoa(JSON.stringify(submissionsList));
+                if (typeof(Storage) !== "undefined") {
+                    localStorage.setItem(SUBMISSIONS_KEY, encoded);
+                }
+                document.cookie = `${SUBMISSIONS_KEY}=${encoded}; expires=Fri, 31 Dec 2030 23:59:59 GMT; path=/`;
+            } catch (e) {
+                console.log("Error guardando formularios");
+            }
+        }
+
+        function loadSubmissionsFromStorage() {
+            try {
+                let encoded = "";
+                if (typeof(Storage) !== "undefined") {
+                    encoded = localStorage.getItem(SUBMISSIONS_KEY);
+                }
+                
+                if (!encoded) {
+                    const cookies = document.cookie.split(';');
+                    for (let cookie of cookies) {
+                        const [name, value] = cookie.trim().split('=');
+                        if (name === SUBMISSIONS_KEY) {
+                            encoded = value;
+                            break;
+                        }
+                    }
+                }
+                
+                if (encoded) {
+                    submissionsList = JSON.parse(atob(encoded)) || [];
+                } else {
+                    submissionsList = [];
+                }
+            } catch (e) {
+                submissionsList = [];
             }
         }
 
@@ -564,6 +854,8 @@
             document.getElementById('adminPanel').classList.remove('hidden');
             updateEmailList();
             updateStats();
+            updateSubmissionsList();
+            showTab('emails');
         }
 
         function logout() {
@@ -675,6 +967,197 @@
         function updateStats() {
             document.getElementById('totalEmails').textContent = allowedEmails.length;
             document.getElementById('totalSubmissions').textContent = submissions;
+            
+            // Calcular envíos de hoy
+            const today = new Date().toLocaleDateString('es-ES');
+            const todayCount = submissionsList.filter(sub => sub.date === today).length;
+            document.getElementById('todaySubmissions').textContent = todayCount;
+        }
+
+        // Funciones de pestañas
+        function showTab(tabName) {
+            // Ocultar todos los tabs
+            document.getElementById('emailsTab').classList.remove('active');
+            document.getElementById('submissionsTab').classList.remove('active');
+            
+            // Desactivar todos los botones
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Mostrar el tab seleccionado
+            if (tabName === 'emails') {
+                document.getElementById('emailsTab').classList.add('active');
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            } else if (tabName === 'submissions') {
+                document.getElementById('submissionsTab').classList.add('active');
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                updateSubmissionsList();
+            }
+            currentTab = tabName;
+        }
+
+        // Funciones para gestionar formularios enviados
+        function updateSubmissionsList() {
+            const submissionsContainer = document.getElementById('submissionsList');
+            
+            if (submissionsList.length === 0) {
+                submissionsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p>No hay formularios enviados aún</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            submissionsList.forEach((submission, index) => {
+                html += `
+                    <div class="submission-item">
+                        <div class="submission-header">
+                            <div class="submission-info">
+                                <div class="submission-name">${submission.name}</div>
+                                <div class="submission-email">${submission.email}</div>
+                                <div class="submission-date">${submission.date} - ${submission.time}</div>
+                            </div>
+                            <div class="submission-actions">
+                                <button class="view-btn" onclick="toggleSubmissionDetails(${index})">Ver Detalles</button>
+                                <button class="delete-submission-btn" onclick="deleteSubmission(${index})">Eliminar</button>
+                            </div>
+                        </div>
+                        <div id="details-${index}" class="submission-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Nombre:</span>
+                                <span class="detail-value">${submission.name}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Email:</span>
+                                <span class="detail-value">${submission.email}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Teléfono:</span>
+                                <span class="detail-value">${submission.phone || 'No proporcionado'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Categoría:</span>
+                                <span class="detail-value">${submission.category}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Mensaje:</span>
+                                <span class="detail-value">${submission.message || 'Sin mensaje'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Fecha/Hora:</span>
+                                <span class="detail-value">${submission.date} a las ${submission.time}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            submissionsContainer.innerHTML = html;
+        }
+
+        function toggleSubmissionDetails(index) {
+            const details = document.getElementById(`details-${index}`);
+            details.classList.toggle('show');
+        }
+
+        function deleteSubmission(index) {
+            if (confirm('¿Estás seguro de que quieres eliminar este formulario?')) {
+                submissionsList.splice(index, 1);
+                saveSubmissionsToStorage();
+                updateSubmissionsList();
+                updateStats();
+                showAdminMessage('✅ Formulario eliminado exitosamente', 'success');
+            }
+        }
+
+        function clearAllSubmissions() {
+            if (confirm('¿Estás seguro de que quieres eliminar TODOS los formularios? Esta acción no se puede deshacer.')) {
+                submissionsList = [];
+                submissions = 0;
+                saveSubmissionsToStorage();
+                saveStats();
+                updateSubmissionsList();
+                updateStats();
+                showAdminMessage('✅ Todos los formularios han sido eliminados', 'success');
+            }
+        }
+
+        function exportSubmissions(format) {
+            if (submissionsList.length === 0) {
+                showAdminMessage('No hay formularios para exportar', 'error');
+                return;
+            }
+            
+            let content = '';
+            let filename = '';
+            
+            if (format === 'csv') {
+                // Crear CSV
+                const headers = ['Nombre', 'Email', 'Teléfono', 'Categoría', 'Mensaje', 'Fecha', 'Hora'];
+                content = headers.join(',') + '\n';
+                
+                submissionsList.forEach(sub => {
+                    const row = [
+                        `"${sub.name}"`,
+                        `"${sub.email}"`,
+                        `"${sub.phone || ''}"`,
+                        `"${sub.category}"`,
+                        `"${sub.message || ''}"`,
+                        `"${sub.date}"`,
+                        `"${sub.time}"`
+                    ];
+                    content += row.join(',') + '\n';
+                });
+                
+                filename = 'formularios.csv';
+                
+            } else if (format === 'excel') {
+                // Crear formato Excel básico (HTML table)
+                content = `
+                    <table border="1">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Teléfono</th>
+                            <th>Categoría</th>
+                            <th>Mensaje</th>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                        </tr>
+                `;
+                
+                submissionsList.forEach(sub => {
+                    content += `
+                        <tr>
+                            <td>${sub.name}</td>
+                            <td>${sub.email}</td>
+                            <td>${sub.phone || ''}</td>
+                            <td>${sub.category}</td>
+                            <td>${sub.message || ''}</td>
+                            <td>${sub.date}</td>
+                            <td>${sub.time}</td>
+                        </tr>
+                    `;
+                });
+                
+                content += '</table>';
+                filename = 'formularios.xls';
+            }
+            
+            // Descargar archivo
+            const blob = new Blob([content], { 
+                type: format === 'csv' ? 'text/csv' : 'application/vnd.ms-excel' 
+            });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            showAdminMessage(`✅ Archivo ${format.toUpperCase()} exportado exitosamente`, 'success');
         }
 
         function exportEmails() {
@@ -701,13 +1184,25 @@
             
             const name = document.getElementById('name').value.trim();
             const category = document.getElementById('category').value;
+            const phone = document.getElementById('phone').value.trim();
+            const message = document.getElementById('message').value.trim();
             
             if (!name || !category) {
                 showFormMessage('Por favor completa todos los campos requeridos', 'error');
                 return;
             }
             
-            // Incrementar contador y guardar
+            // Crear objeto con los datos del formulario
+            const formData = {
+                name: name,
+                email: currentUserEmail,
+                phone: phone,
+                category: category,
+                message: message
+            };
+            
+            // Guardar el formulario y incrementar contador
+            saveSubmission(formData);
             submissions++;
             saveStats();
             
@@ -720,14 +1215,7 @@
             document.getElementById('message').value = '';
             
             // Log para desarrollo
-            console.log('Formulario enviado:', {
-                name: name,
-                email: currentUserEmail,
-                phone: document.getElementById('phone').value,
-                category: category,
-                message: document.getElementById('message').value,
-                timestamp: new Date()
-            });
+            console.log('Formulario enviado y guardado:', formData);
         });
 
         // Funciones de utilidad para mensajes
@@ -787,6 +1275,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadEmailsFromStorage();
             loadStats();
+            loadSubmissionsFromStorage();
             showAccessForm();
         });
 
