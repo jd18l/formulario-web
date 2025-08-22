@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Formulario con Panel Admin</title>
+    <title>Sistema de Formulario con Acceso Controlado</title>
     <style>
         * {
             margin: 0;
@@ -249,15 +249,54 @@
             margin-top: 5px;
         }
 
-        .login-form {
+        .access-form {
             max-width: 400px;
             margin: 50px auto;
+        }
+
+        .access-denied {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #dc2626;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .access-denied h3 {
+            margin-bottom: 10px;
+        }
+
+        .lock-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
+    <!-- Formulario de Verificación de Acceso -->
+    <div id="accessForm" class="container access-form">
+        <div class="header">
+            <div class="lock-icon">🔐</div>
+            <h1>Acceso al Formulario</h1>
+            <p>Solo usuarios autorizados pueden acceder</p>
+        </div>
+        <div class="content">
+            <div id="accessError" class="error-message hidden">
+                Tu correo no está autorizado para acceder
+            </div>
+            <div class="form-group">
+                <label for="userEmail">Tu Correo Electrónico:</label>
+                <input type="email" id="userEmail" placeholder="ejemplo@correo.com" required>
+            </div>
+            <button class="btn" onclick="verifyAccess()">Verificar Acceso</button>
+            <button class="btn admin-btn" onclick="showAdminLogin()">Soy Administrador</button>
+        </div>
+    </div>
+
     <!-- Formulario de Login del Administrador -->
-    <div id="loginForm" class="container login-form">
+    <div id="loginForm" class="container access-form hidden">
         <div class="header">
             <h1>🔐 Acceso Administrador</h1>
             <p>Ingresa la contraseña para acceder</p>
@@ -271,7 +310,7 @@
                 <input type="password" id="adminPassword" placeholder="Ingresa la contraseña">
             </div>
             <button class="btn" onclick="login()">Iniciar Sesión</button>
-            <button class="btn admin-btn" onclick="showMainForm()">Ir al Formulario Principal</button>
+            <button class="btn admin-btn" onclick="showAccessForm()">Volver</button>
         </div>
     </div>
 
@@ -282,6 +321,9 @@
             <p>Complete todos los campos requeridos</p>
         </div>
         <div class="content">
+            <div class="success-message">
+                ✅ Acceso autorizado para: <span id="authorizedEmail"></span>
+            </div>
             <div id="formMessage" class="hidden"></div>
             <form id="registrationForm">
                 <div class="form-group">
@@ -291,7 +333,7 @@
                 
                 <div class="form-group">
                     <label for="email">Correo Electrónico *</label>
-                    <input type="email" id="email" name="email" required placeholder="ejemplo@correo.com">
+                    <input type="email" id="email" name="email" required readonly>
                 </div>
                 
                 <div class="form-group">
@@ -317,7 +359,7 @@
                 
                 <button type="submit" class="btn">Enviar Formulario</button>
             </form>
-            <button class="btn admin-btn" onclick="showLogin()">Panel de Administración</button>
+            <button class="btn admin-btn" onclick="logout()">Salir</button>
         </div>
     </div>
 
@@ -349,40 +391,213 @@
                 
                 <h3 style="margin-top: 30px;">Correos Autorizados</h3>
                 <div id="emailList" class="email-list">
-                    <p style="text-align: center; color: #6b7280;">No hay correos autorizados</p>
+                    <p style="text-align: center; color: #6b7280;">Cargando correos...</p>
                 </div>
                 
-                <button class="btn admin-btn" onclick="showMainForm()">Volver al Formulario</button>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn admin-btn" onclick="exportEmails()" style="width: 48%;">Exportar Lista</button>
+                    <button class="btn admin-btn" onclick="logout()" style="width: 48%;">Cerrar Sesión</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Configuración y datos
+        // Configuración
         const ADMIN_PASSWORD = "admin123"; // Cambia esta contraseña
-        let allowedEmails = ["admin@ejemplo.com", "usuario@test.com"]; // Correos iniciales
+        const STORAGE_KEY = "formulario_emails_autorizados";
+        const STATS_KEY = "formulario_estadisticas";
+        
+        let allowedEmails = [];
+        let currentUserEmail = "";
         let submissions = 0;
 
+        // Funciones de almacenamiento permanente
+        function saveEmailsToStorage() {
+            const emailData = {
+                emails: allowedEmails,
+                lastUpdated: new Date().toISOString()
+            };
+            // Codificar en base64 para mayor seguridad
+            const encoded = btoa(JSON.stringify(emailData));
+            
+            // Usar múltiples métodos de almacenamiento
+            try {
+                // Método 1: localStorage (si está disponible)
+                if (typeof(Storage) !== "undefined") {
+                    localStorage.setItem(STORAGE_KEY, encoded);
+                }
+                
+                // Método 2: Cookies como respaldo
+                document.cookie = `${STORAGE_KEY}=${encoded}; expires=Fri, 31 Dec 2030 23:59:59 GMT; path=/`;
+                
+                // Método 3: Almacenamiento en URL hash (oculto)
+                const currentHash = window.location.hash;
+                if (!currentHash.includes('#data=')) {
+                    window.location.hash = `#data=${encoded}`;
+                }
+                
+            } catch (e) {
+                console.log("Usando almacenamiento alternativo");
+            }
+        }
+
+        function loadEmailsFromStorage() {
+            let encoded = "";
+            
+            try {
+                // Método 1: localStorage
+                if (typeof(Storage) !== "undefined") {
+                    encoded = localStorage.getItem(STORAGE_KEY);
+                }
+                
+                // Método 2: Cookies como respaldo
+                if (!encoded) {
+                    const cookies = document.cookie.split(';');
+                    for (let cookie of cookies) {
+                        const [name, value] = cookie.trim().split('=');
+                        if (name === STORAGE_KEY) {
+                            encoded = value;
+                            break;
+                        }
+                    }
+                }
+                
+                // Método 3: URL hash como último recurso
+                if (!encoded) {
+                    const hash = window.location.hash;
+                    if (hash.includes('#data=')) {
+                        encoded = hash.split('#data=')[1];
+                    }
+                }
+                
+                if (encoded) {
+                    const decoded = JSON.parse(atob(encoded));
+                    allowedEmails = decoded.emails || [];
+                } else {
+                    // Correos iniciales si no hay datos guardados
+                    allowedEmails = ["admin@ejemplo.com"];
+                    saveEmailsToStorage();
+                }
+                
+            } catch (e) {
+                // Si hay error, usar correos por defecto
+                allowedEmails = ["admin@ejemplo.com"];
+                saveEmailsToStorage();
+            }
+        }
+
+        function saveStats() {
+            const stats = { submissions: submissions };
+            try {
+                const encoded = btoa(JSON.stringify(stats));
+                if (typeof(Storage) !== "undefined") {
+                    localStorage.setItem(STATS_KEY, encoded);
+                }
+                document.cookie = `${STATS_KEY}=${encoded}; expires=Fri, 31 Dec 2030 23:59:59 GMT; path=/`;
+            } catch (e) {
+                console.log("Error guardando estadísticas");
+            }
+        }
+
+        function loadStats() {
+            try {
+                let encoded = "";
+                if (typeof(Storage) !== "undefined") {
+                    encoded = localStorage.getItem(STATS_KEY);
+                }
+                
+                if (!encoded) {
+                    const cookies = document.cookie.split(';');
+                    for (let cookie of cookies) {
+                        const [name, value] = cookie.trim().split('=');
+                        if (name === STATS_KEY) {
+                            encoded = value;
+                            break;
+                        }
+                    }
+                }
+                
+                if (encoded) {
+                    const stats = JSON.parse(atob(encoded));
+                    submissions = stats.submissions || 0;
+                }
+            } catch (e) {
+                submissions = 0;
+            }
+        }
+
         // Funciones de navegación
-        function showLogin() {
+        function showAccessForm() {
+            document.getElementById('accessForm').classList.remove('hidden');
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('mainForm').classList.add('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('accessError').classList.add('hidden');
+            document.getElementById('userEmail').value = '';
+        }
+
+        function showAdminLogin() {
+            document.getElementById('accessForm').classList.add('hidden');
             document.getElementById('loginForm').classList.remove('hidden');
             document.getElementById('mainForm').classList.add('hidden');
             document.getElementById('adminPanel').classList.add('hidden');
             document.getElementById('loginError').classList.add('hidden');
         }
 
-        function showMainForm() {
+        function showMainForm(email) {
+            document.getElementById('accessForm').classList.add('hidden');
             document.getElementById('loginForm').classList.add('hidden');
             document.getElementById('mainForm').classList.remove('hidden');
             document.getElementById('adminPanel').classList.add('hidden');
+            
+            // Configurar el formulario con el email autorizado
+            currentUserEmail = email;
+            document.getElementById('email').value = email;
+            document.getElementById('authorizedEmail').textContent = email;
         }
 
         function showAdminPanel() {
+            document.getElementById('accessForm').classList.add('hidden');
             document.getElementById('loginForm').classList.add('hidden');
             document.getElementById('mainForm').classList.add('hidden');
             document.getElementById('adminPanel').classList.remove('hidden');
             updateEmailList();
             updateStats();
+        }
+
+        function logout() {
+            currentUserEmail = "";
+            showAccessForm();
+        }
+
+        // Verificación de acceso
+        function verifyAccess() {
+            const email = document.getElementById('userEmail').value.trim().toLowerCase();
+            
+            if (!email) {
+                showAccessMessage('Por favor ingresa tu correo electrónico', 'error');
+                return;
+            }
+            
+            if (!isValidEmail(email)) {
+                showAccessMessage('Por favor ingresa un formato de correo válido', 'error');
+                return;
+            }
+            
+            // Verificar si el correo está en la lista (sin importar mayúsculas/minúsculas)
+            const emailAllowed = allowedEmails.some(allowedEmail => 
+                allowedEmail.toLowerCase() === email
+            );
+            
+            if (emailAllowed) {
+                showMainForm(email);
+            } else {
+                document.getElementById('accessError').classList.remove('hidden');
+                setTimeout(() => {
+                    document.getElementById('accessError').classList.add('hidden');
+                }, 5000);
+            }
         }
 
         // Login del administrador
@@ -393,13 +608,15 @@
                 document.getElementById('adminPassword').value = '';
             } else {
                 document.getElementById('loginError').classList.remove('hidden');
+                setTimeout(() => {
+                    document.getElementById('loginError').classList.add('hidden');
+                }, 3000);
             }
         }
 
         // Gestión de correos autorizados
         function addEmail() {
-            const newEmail = document.getElementById('newEmail').value.trim();
-            const messageDiv = document.getElementById('adminMessage');
+            const newEmail = document.getElementById('newEmail').value.trim().toLowerCase();
             
             if (!newEmail) {
                 showAdminMessage('Por favor ingresa un correo válido', 'error');
@@ -411,25 +628,27 @@
                 return;
             }
             
-            if (allowedEmails.includes(newEmail)) {
+            if (allowedEmails.some(email => email.toLowerCase() === newEmail)) {
                 showAdminMessage('Este correo ya está en la lista', 'error');
                 return;
             }
             
             allowedEmails.push(newEmail);
+            saveEmailsToStorage(); // Guardar permanentemente
             document.getElementById('newEmail').value = '';
             updateEmailList();
             updateStats();
-            showAdminMessage('Correo agregado exitosamente', 'success');
+            showAdminMessage('✅ Correo agregado y guardado permanentemente', 'success');
         }
 
         function removeEmail(email) {
-            const index = allowedEmails.indexOf(email);
+            const index = allowedEmails.findIndex(e => e.toLowerCase() === email.toLowerCase());
             if (index > -1) {
                 allowedEmails.splice(index, 1);
+                saveEmailsToStorage(); // Guardar cambios permanentemente
                 updateEmailList();
                 updateStats();
-                showAdminMessage('Correo eliminado exitosamente', 'success');
+                showAdminMessage('✅ Correo eliminado permanentemente', 'success');
             }
         }
 
@@ -458,53 +677,52 @@
             document.getElementById('totalSubmissions').textContent = submissions;
         }
 
+        function exportEmails() {
+            const emailList = allowedEmails.join('\n');
+            const blob = new Blob([emailList], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'correos-autorizados.txt';
+            a.click();
+            window.URL.revokeObjectURL(url);
+            showAdminMessage('✅ Lista exportada exitosamente', 'success');
+        }
+
         // Validación de correo
         function isValidEmail(email) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             return emailRegex.test(email);
         }
 
-        function isEmailAllowed(email) {
-            return allowedEmails.includes(email);
-        }
-
         // Manejo del formulario principal
         document.getElementById('registrationForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const email = document.getElementById('email').value.trim();
             const name = document.getElementById('name').value.trim();
             const category = document.getElementById('category').value;
             
-            // Validar campos requeridos
-            if (!name || !email || !category) {
+            if (!name || !category) {
                 showFormMessage('Por favor completa todos los campos requeridos', 'error');
                 return;
             }
             
-            // Validar formato de correo
-            if (!isValidEmail(email)) {
-                showFormMessage('Por favor ingresa un correo electrónico válido', 'error');
-                return;
-            }
-            
-            // Verificar si el correo está autorizado
-            if (!isEmailAllowed(email)) {
-                showFormMessage('Lo sentimos, tu correo electrónico no está autorizado para usar este formulario. Contacta al administrador.', 'error');
-                return;
-            }
-            
-            // Si todo está correcto
+            // Incrementar contador y guardar
             submissions++;
+            saveStats();
+            
             showFormMessage('¡Formulario enviado exitosamente! Gracias por tu registro.', 'success');
             
-            // Limpiar formulario
-            document.getElementById('registrationForm').reset();
+            // Limpiar formulario (excepto email)
+            document.getElementById('name').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('message').value = '';
             
-            // Simular envío (aquí podrías agregar la lógica para enviar a un servidor)
+            // Log para desarrollo
             console.log('Formulario enviado:', {
                 name: name,
-                email: email,
+                email: currentUserEmail,
                 phone: document.getElementById('phone').value,
                 category: category,
                 message: document.getElementById('message').value,
@@ -535,25 +753,49 @@
             }, 3000);
         }
 
-        // Evento para Enter en el campo de contraseña
+        function showAccessMessage(message, type) {
+            const messageDiv = document.getElementById('accessError');
+            if (type === 'error') {
+                messageDiv.textContent = message;
+                messageDiv.classList.remove('hidden');
+                setTimeout(() => {
+                    messageDiv.classList.add('hidden');
+                }, 5000);
+            }
+        }
+
+        // Eventos de teclado
+        document.getElementById('userEmail').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verifyAccess();
+            }
+        });
+
         document.getElementById('adminPassword').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 login();
             }
         });
 
-        // Evento para Enter en el campo de nuevo correo
         document.getElementById('newEmail').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 addEmail();
             }
         });
 
-        // Inicializar la aplicación
+        // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            showMainForm();
-            updateStats();
+            loadEmailsFromStorage();
+            loadStats();
+            showAccessForm();
         });
+
+        // Guardar automáticamente cada 30 segundos
+        setInterval(function() {
+            if (allowedEmails.length > 0) {
+                saveEmailsToStorage();
+            }
+        }, 30000);
     </script>
 </body>
 </html>
